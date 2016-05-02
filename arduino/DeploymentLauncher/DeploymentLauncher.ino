@@ -189,10 +189,10 @@ const int pulsePower = 64;
 int armedLedLevel = 0;
 
 void armedLedHandler() {
-  float rad = ((millis() * 1000 / pulseLengthMs) % 1000) * PI / 1000;
-  armedLedLevel = pulsePower - abs(cos(rad)) * pulsePower; // Peak-shaped light curve.
-  
   if (armedState == ARMED) {
+    float rad = PI * (millis() % pulseLengthMs) / pulseLengthMs;
+    armedLedLevel = pulsePower - abs(cos(rad)) * pulsePower; // Peak-shaped light curve.
+    
     analogWrite(armedLedPin, armedLedLevel);
   } else {
     analogWrite(armedLedPin, LOW);
