@@ -58,9 +58,9 @@ void setup() {
   pinMode(timerLedPin, OUTPUT);
   pinMode(deployLedPin, OUTPUT);
 
-  pinMode(switch1Pin, INPUT);
-  pinMode(switch2Pin, INPUT);
-  pinMode(deployButtonPin, INPUT);
+  pinMode(switch1Pin, INPUT_PULLUP);
+  pinMode(switch2Pin, INPUT_PULLUP);
+  pinMode(deployButtonPin, INPUT_PULLUP);
 
   Timer1.attachInterrupt(timerIsr);
   Timer1.initialize(0);
@@ -102,8 +102,8 @@ void armedStateHandler() {
   int switch2State = digitalRead(switch2Pin);
 
   int armSwitchCount = 0;
-  if (switch1State == HIGH) armSwitchCount++;
-  if (switch2State == HIGH) armSwitchCount++;
+  if (switch1State == LOW) armSwitchCount++;
+  if (switch2State == LOW) armSwitchCount++;
 
   armedState_t newArmedState = armedState;
   
@@ -148,7 +148,7 @@ void deployButtonHandler() {
   
   int deployButtonState = digitalRead(deployButtonPin);
 
-  if (deployButtonState == HIGH) {
+  if (deployButtonState == LOW) {
     setDeployedFlag(true);
   }
 }
