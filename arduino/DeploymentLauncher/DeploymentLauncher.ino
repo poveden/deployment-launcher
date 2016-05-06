@@ -6,10 +6,10 @@
   - Jorge Poveda
 
   Required libraries:
-  - Timer1 (http://playground.arduino.cc/Code/Timer1)
+  - AsyncDelay (https://github.com/stevemarple/AsyncDelay)
 **/
 
-#include <TimerOne.h>
+#include <AsyncDelay.h>
 
 #define DEBUG
 
@@ -46,7 +46,7 @@ typedef enum armedState_t {
 } armedState_t;
 
 armedState_t armedState = UNARMED;
-bool timerExpired = false;
+AsyncDelay timer;
 bool deployed = false;
 
 
@@ -62,10 +62,6 @@ void setup() {
   pinMode(switch2Pin, INPUT_PULLUP);
   pinMode(deployButtonPin, INPUT_PULLUP);
 
-  Timer1.attachInterrupt(timerIsr);
-  Timer1.initialize(0);
-  Timer1.stop();
-
   Serial.begin(9600);
   TRACELN("Deployment launcher started.");
 }
@@ -79,22 +75,13 @@ void loop() {
 
 void timerStart() {
   TRACELN("timerStart");
-  timerExpired = false;
-  Timer1.setPeriod(armingTimeoutMs * 1000);
+  timer.start(armingTimeoutMs, AsyncDelay::MILLIS);
   digitalWrite(timerLedPin, HIGH);
 }
 
 void timerStop() {
   TRACELN("timerStop");
-  Timer1.stop();
   digitalWrite(timerLedPin, LOW);
-}
-
-void timerIsr() {
-  TRACELN("timerIsr");
-  timerStop();
-  timerExpired = true;
-  setArmedState(ARMFAILED);
 }
 
 void armedStateHandler() {
@@ -120,7 +107,10 @@ void armedStateHandler() {
       if (armSwitchCount == 0) {
         timerStop();
         newArmedState = UNARMED;
-      } else if (armSwitchCount == 2 && !timerExpired) {
+      } else if (timer.isExpired()) {
+        timerStop();
+        newArmedState = ARMFAILED;
+      } else if (armSwitchCount == 2) {
         timerStop();
         newArmedState = ARMED;
       }
@@ -189,10 +179,10 @@ const int pulsePower = 64;
 int armedLedLevel = 0;
 
 void armedLedHandler() {
-  float rad = ((millis() * 1000 / pulseLengthMs) % 1000) * PI / 1000;
-  armedLedLevel = pulsePower - abs(cos(rad)) * pulsePower; // Peak-shaped light curve.
-  
   if (armedState == ARMED) {
+    float rad = PI * (millis() % pulseLengthMs) / pulseLengthMs;
+    armedLedLevel = pulsePower - abs(cos(rad)) * pulsePower; // Peak-shaped light curve.
+    
     analogWrite(armedLedPin, armedLedLevel);
   } else {
     analogWrite(armedLedPin, LOW);
